@@ -7,7 +7,7 @@
 
 struct QFloat {
     uint8_t val[14];
-    int16_t se;  // sign + exponent
+    int16_t se;  // sign + exponent, sign is MSB
     QFloat();
 };
 
