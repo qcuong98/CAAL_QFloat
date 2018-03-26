@@ -8,7 +8,7 @@
 #define K ((1 << NUMBER_EXPONENT_BITS) - 1)
 
 struct QFloat {
-    int16_t se;  // sign + exponent
+    int16_t se;  // sign + exponent, sign is MSB
     uint8_t val[NUMBER_SIGNIFICAND_BYTES];
     QFloat() {
         se = -K;
