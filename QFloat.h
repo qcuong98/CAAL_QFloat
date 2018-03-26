@@ -17,4 +17,9 @@ QFloat Dec2QFloat(const char *);
 char *QFloat2Dec(const QFloat&); //remeber to free
 
 QFloat operator +(const QFloat &, const QFloat&);
+
+QFloat operator -(const QFloat &);
+QFloat operator -(const QFloat &, const QFloat&);
+
+
 #endif

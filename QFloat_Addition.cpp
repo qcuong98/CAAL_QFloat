@@ -169,3 +169,13 @@ QFloat operator +(const QFloat &a, const QFloat &b) {
 
 	return to_qfloat(add(x,y));
 }
+
+QFloat operator -(const QFloat &a) {
+	QFloat res = a;
+	res.se ^= (1u << 8);
+	return res;
+}
+
+QFloat operator -(const QFloat &a, const QFloat &b) {
+	return a + (-b);
+}
