@@ -1,7 +1,7 @@
 #include "QFloat.h"
 
 struct EFloat {
-	uint8_t val[MANT + 1]; //extended
+	uint8_t val[NUMBER_SIGNIFICAND_BYTES + 1]; //extended
 	int16_t exp;
 	bool sign;
 	bool NaN;
@@ -10,7 +10,7 @@ struct EFloat {
 
 void shift_left(EFloat &f) {
 	uint8_t out = 0;
-	for (int i = 0; i <= MANT; i++) {
+	for (int i = 0; i <= NUMBER_SIGNIFICAND_BYTES; i++) {
 		uint8_t n_out = f.val[i] >> 7;
 		f.val[i] = (f.val[i] << 1) | out;
 		out = n_out;
@@ -19,7 +19,7 @@ void shift_left(EFloat &f) {
 
 void shift_right(EFloat &f) {
 	uint8_t out = 0;
-	for (int i = MANT; i >= 0; i--) {
+	for (int i = NUMBER_SIGNIFICAND_BYTES; i >= 0; i--) {
 		uint8_t n_out = f.val[i] & 1;
 		f.val[i] = (f.val[i] >> 1) | (out << 7);
 		out = n_out;
@@ -28,7 +28,7 @@ void shift_right(EFloat &f) {
 
 void neg(EFloat &a) {
 	uint16_t carry = 1;
-	for (int i = 0; i <= MANT; i++) {
+	for (int i = 0; i <= NUMBER_SIGNIFICAND_BYTES; i++) {
 		uint16_t tmp = (uint16_t)(uint8_t)(~a.val[i]) + carry;
 		carry = tmp >> 8;
 		a.val[i] = tmp & ((1u << 8) - 1);
@@ -40,7 +40,7 @@ EFloat to_efloat(const QFloat &a) {
 	EFloat e;
 
 	bool zero = true;
-	for (int i = 0 ; i < MANT; i++) {
+	for (int i = 0 ; i < NUMBER_SIGNIFICAND_BYTES; i++) {
 		e.val[i] = a.val[i];
 		zero = zero && (a.val[i] == 0);
 	}
@@ -51,7 +51,7 @@ EFloat to_efloat(const QFloat &a) {
 		e.NaN = !zero;
 	} else if(e.exp != 0) {
 		e.inf = e.NaN = 0;
-		e.val[MANT] = 1; //not denomalized number
+		e.val[NUMBER_SIGNIFICAND_BYTES] = 1; //not denomalized number
 	} else {
 		e.inf = e.NaN = 0;
 		e.exp = 1; //denormalized number
@@ -103,7 +103,7 @@ EFloat add(EFloat a, EFloat b) {
 	bool carry = 0;
 	EFloat res;
 
-	for (int i = 0; i <= MANT; i++) {
+	for (int i = 0; i <= NUMBER_SIGNIFICAND_BYTES; i++) {
 		uint16_t tmp = (uint16_t)a.val[i] + b.val[i] + carry;
 		carry = tmp >> 8;
 		res.val[i] = (uint8_t)tmp;
@@ -129,7 +129,7 @@ QFloat to_qfloat(EFloat e) {
 	//check zero
 	bool zero = true;
 
-	for (int i = 0; i <= MANT; i++)
+	for (int i = 0; i <= NUMBER_SIGNIFICAND_BYTES; i++)
 		zero = zero && (e.val[i] == 0);
 
 	if (zero) {
@@ -137,22 +137,22 @@ QFloat to_qfloat(EFloat e) {
 		return res;
 	}
 	//renormalize	
-	bool sign = e.val[MANT] >> 7;
+	bool sign = e.val[NUMBER_SIGNIFICAND_BYTES] >> 7;
 
 	if (sign)
 		neg(e);
 
-	while (e.val[MANT] > 1 || e.exp < 1) {
+	while (e.val[NUMBER_SIGNIFICAND_BYTES] > 1 || e.exp < 1) {
 		shift_right(e);
 		e.exp++;
 	}
 
-	while (e.val[MANT] < 1 && e.exp > 1) {
+	while (e.val[NUMBER_SIGNIFICAND_BYTES] < 1 && e.exp > 1) {
 		shift_left(e);
 		e.exp--;
 	}
 
-	if (e.val[MANT] < 1) //denomalized
+	if (e.val[NUMBER_SIGNIFICAND_BYTES] < 1) //denomalized
 		e.exp = 0;
 	if (e.exp >= K) //infinite
 		memset(e.val, 0, sizeof(e.val));

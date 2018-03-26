@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#define K ((1 << 15) - 1)
-#define MANT 14
+#define NUMBER_EXPONENT_BITS 15
+#define NUMBER_SIGNIFICAND_BYTES 14
+#define K ((1 << NUMBER_EXPONENT_BITS) - 1)
 
 struct QFloat {
-    uint8_t val[MANT];
-    uint16_t se;  // sign + exponent, sign is MSB
+    int16_t se;  // sign + exponent, sign is MSB
+    uint8_t val[NUMBER_SIGNIFICAND_BYTES];
     QFloat();
 };
 
