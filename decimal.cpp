@@ -172,8 +172,9 @@ QFloat Dec2QFloat(const char *s) {
 
     for (int i = 0; i < MAX_SIZE; i++) {
         // Assumming the res.val is zero already
-        if (bits[i] == 1)
+        if (bits[i] == 1) {
             res.val[i >> 3] |= 1 << (i & 7);
+        }
     }
 
     free(bits);
@@ -209,6 +210,8 @@ char *QFloat2Dec(const QFloat &q) {
         pow = pow * TWO;
     }
     res = res + pow;
+
+    if (q.se < 0) res = -res;
 
     return res.to_str();
 }

@@ -216,7 +216,7 @@ Number Number::raw_add(const Number &a, const Number &b) {
         throw Exception("Fatal: Allocation error");
     LL rem = 0;
 #define UPDATE(x, rem)        \
-    if (rem > B)              \
+    if (rem >= B)             \
         x = rem - B, rem = 1; \
     else                      \
         x = rem, rem = 0
@@ -291,6 +291,7 @@ Number Number::raw_substract(const Number &a, const Number &b) {
         rem = a.d[i] - rem;
         UPDATE(d[i], rem);
     }
+#undef UPDATE
     return Number(1, a.n, d);
 }
 
@@ -631,8 +632,8 @@ char *Number::to_str() const {
     std::stringstream ss;
     ss << *this;
     const std::string s = ss.str();
-    char *res = (char*) malloc(s.length() + 1);
-    res[s.length()] = '\0';
+    char *res           = (char *)malloc(s.length() + 1);
+    res[s.length()]     = '\0';
     memcpy(res, s.data(), s.length());
     return res;
 }
