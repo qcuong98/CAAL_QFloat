@@ -2,9 +2,6 @@
 #include "QFloat.h"
 #include "number/number.h"
 
-#include <iostream>
-using namespace std;
-
 const int16_t BIAS     = 0b0011111111111111;
 const int MAX_EXPONENT = 0b0111111111111111 - BIAS;
 const int MIN_EXPONENT = -BIAS;
