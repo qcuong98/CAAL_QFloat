@@ -20,3 +20,15 @@ char *QFloat2Bin(const QFloat &q) {
     }
     return res;
 }
+
+QFloat Bin2QFloat(const char *s) {
+    QFloat res;
+    uint32_t *p = (uint32_t *)&res;
+    int len = strlen(s);
+    for (int i=0, j=127; i<len && j >= 0; i++) {
+        if (s[i] != '0' && s[i] != '1') continue;
+        if (s[i] == '1') p[j >> 5] |= 1u << (j & 31);
+        j--;
+    }
+    return res;
+}

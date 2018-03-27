@@ -19,6 +19,7 @@ QFloat Dec2QFloat(const char *);
 char *QFloat2Dec(const QFloat &);
 
 char *QFloat2Bin(const QFloat &);
+QFloat Bin2QFloat(const char *);
 
 QFloat operator+(const QFloat &, const QFloat &);
 
