@@ -55,6 +55,7 @@ EFloat to_efloat(const QFloat &a) {
 	} else {
 		e.inf = e.NaN = 0;
 		e.exp = 1; //denormalized number
+		e.val[NUMBER_SIGNIFICAND_BYTES] = 0;
 	}
 
 	e.sign = ((uint16_t)a.se) >> NUMBER_EXPONENT_BITS;

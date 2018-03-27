@@ -91,24 +91,30 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	return c;
 }
 
-#define ge(a, b) (memcmp((a),(b),sizeof(a)) >= 0)
+bool ge(uint8_t *a, uint8_t *b) {
+	for (int k = NUMBER_SIGNIFICAND_BYTES * 2; k >= 0; --k) {
+		if (a[k]!=b[k])
+			return a[k] > b[k];
+	}
+	return 1;
+}
 
 void shift_right(uint8_t *a) {
-		uint8_t l_bit = 0, r_bit;
-		for (int k = NUMBER_SIGNIFICAND_BYTES * 2; k >= 0; --k) {
-			r_bit = (a[k] & 1);
-			a[k] = (a[k] >> 1) | (l_bit << 7);
-			l_bit = r_bit;
-		}
+	uint8_t l_bit = 0, r_bit;
+	for (int k = NUMBER_SIGNIFICAND_BYTES * 2; k >= 0; --k) {
+		r_bit = (a[k] & 1);
+		a[k] = (a[k] >> 1) | (l_bit << 7);
+		l_bit = r_bit;
+	}
 }
 
 void shift_left(uint8_t *a) {
-		uint8_t l_bit, r_bit = 0;
-		for (int k = 0; k <= NUMBER_SIGNIFICAND_BYTES * 2; ++k) {
-			l_bit = (a[k] >> 7);
-			a[k] = (a[k] << 1) | r_bit;
-			r_bit = l_bit;
-		}
+	uint8_t l_bit, r_bit = 0;
+	for (int k = 0; k <= NUMBER_SIGNIFICAND_BYTES * 2; ++k) {
+		l_bit = (a[k] >> 7);
+		a[k] = (a[k] << 1) | r_bit;
+		r_bit = l_bit;
+	}
 }
 
 QFloat operator /(const QFloat &a, const QFloat &b) {
@@ -133,7 +139,7 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	y_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
 
 	if (!ge(x_val, y_val)) {
-		shift_left(y_val);
+		shift_left(x_val);
 		--exponent_c;
 	}
 
@@ -145,12 +151,12 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	while (i1 >= 0) {
 		if (ge(x_val, y_val)) { //x>=y	
 			// minus x -= y		
-			int carry = 0;
+			int16_t carry = 0;
 			for (int j = 0; j <= 2*NUMBER_SIGNIFICAND_BYTES; j++) {
 				int16_t tmp = (int16_t)x_val[j] - y_val[j] - carry;
 				if (tmp < 0){
 					carry = 1;
-					tmp += UINT8_MAX;
+					tmp += (1u << 8);
 				} else {
 					carry = 0;
 				}

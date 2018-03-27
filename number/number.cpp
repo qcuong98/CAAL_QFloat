@@ -642,6 +642,7 @@ char *Number::to_str() const {
 
 Number Number::chop(int k) const {
     Number res(*this);
+    if (res.sign != 0)
     for (int i=0; i<PRECISION_SIZE - k; i++) res.d[i] = 0;
     return res;
 }
