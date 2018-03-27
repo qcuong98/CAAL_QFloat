@@ -5,14 +5,25 @@
 #include <iostream>
 using namespace std;
 
-
 const Number TWO(2);
 const Number ONE(1);
 const Number HALF("0.5");
-const Number LOG2("0.301029995663981195213738894724493026768189881462108541310427461127108189274424509486927252118186172041");
-const Number LN10("2.30258509299404568401799145468436420760110148862877297603332790096757260967735248023599720508959829834");
-const Number LOG2_10("3.3219280948873623478703194294893901758648313930245806120547563958159347766086252158501397433593701551");
-const Number LN2("0.693147180559945309417232121458176568075500134360255254120680009493393621969694715605863326996418687542");
+const Number LOG2(
+    "0."
+    "3010299956639811952137388947244930267681898814621085413104274611271081892744245094869272521181"
+    "86172041");
+const Number LN10(
+    "2."
+    "3025850929940456840179914546843642076011014886287729760333279009675726096773524802359972050895"
+    "9829834");
+const Number LOG2_10(
+    "3."
+    "3219280948873623478703194294893901758648313930245806120547563958159347766086252158501397433593"
+    "701551");
+const Number LN2(
+    "0."
+    "6931471805599453094172321214581765680755001343602552541206800094933936219696947156058633269964"
+    "18687542");
 const int16_t BIAS = 0b0011111111111111;
 
 struct ParsedStr {
@@ -27,6 +38,7 @@ struct ParsedStr {
 static ParsedStr parse_str(const char *s) {
 #define IS_NUMERIC(C) ('0' <= (C) && (C) <= '9')
     ParsedStr p;
+
     const int len = strlen(s);
 
     if (len == 0)
@@ -116,6 +128,13 @@ static ParsedStr parse_str(const char *s) {
 }
 
 QFloat Dec2QFloat(const char *s) {
+    if (0 == strcmp(s, "+Inf"))
+        return QFloat::Inf;
+    if (0 == strcmp(s, "-Inf"))
+        return -QFloat::Inf;
+    if (0 == strcmp(s, "NaN"))
+        return QFloat::NaN;
+
     ParsedStr inp = parse_str(s);
 
     QFloat res;
@@ -125,7 +144,7 @@ QFloat Dec2QFloat(const char *s) {
 
     {
         ParsedStr inp = parse_str(s);
-        char *tmp = (char *)calloc(inp.int_part_len + 1, 1);
+        char *tmp     = (char *)calloc(inp.int_part_len + 1, 1);
         memcpy(tmp, inp.int_part, inp.int_part_len);
         Number _int_part(tmp);
         free(tmp);
@@ -139,15 +158,17 @@ QFloat Dec2QFloat(const char *s) {
             free(tmp);
         }
 
-        Number num = _int_part + _float_part;
+        Number num  = _int_part + _float_part;
         Number _exp = Number(inp.exponent) * LOG2_10;
-        Number I = _exp.floor();
-        Number F = _exp.fraction();
-        num = num * (F * LN2).exp();
-        int_part = num.floor();
-        float_part = num.fraction();
-        if (I.sign == 0) exp = 0;
-        else exp = I.d[PRECISION_SIZE];
+        Number I    = _exp.floor();
+        Number F    = _exp.fraction();
+        num         = num * (F * LN2).exp();
+        int_part    = num.floor();
+        float_part  = num.fraction();
+        if (I.sign == 0)
+            exp = 0;
+        else
+            exp = I.d[PRECISION_SIZE];
     }
 
     const int MAX_SIZE = sizeof(QFloat::val) * 8;  // 112
@@ -222,9 +243,27 @@ QFloat Dec2QFloat(const char *s) {
 }
 
 char *QFloat2Dec(const QFloat &q) {
-#define RETURN(_X) { Number _tmp = (_X); return _tmp.chop(4).to_str(); }
+#define RETURN_STR(_s)                           \
+    {                                            \
+        const char *s = _s;                      \
+        int len       = strlen(s);               \
+        char *r       = (char *)malloc(len + 1); \
+        memcpy(r, s, len + 1);                   \
+        return r;                                \
+    }
+    if (IsNaN(q)) RETURN_STR("NaN");
+    if (IsInf(q)) {
+        if (q.se < 0) RETURN_STR("-Inf");
+        RETURN_STR("+Inf");
+    }
+
+#define RETURN(_X)                    \
+    {                                 \
+        Number _tmp = (_X);           \
+        return _tmp.chop(4).to_str(); \
+    }
     const int BIT_COUNT = sizeof(QFloat::val) * 8;
-    int exponent = q.se & 0b0111111111111111;
+    int exponent        = q.se & 0b0111111111111111;
     if (exponent == 0) {
         // denormalized or 0
         // Fuck denormalization
@@ -244,22 +283,23 @@ char *QFloat2Dec(const QFloat &q) {
         }
         res = res + pow;
 
-        if (q.se < 0) res = -res;
+        if (q.se < 0)
+            res = -res;
 
         RETURN(res);
     } else {
         Number res(0ll);
         Number pow = ONE;
-        res = res + pow;
-        for (int i=-1; i >= -BIT_COUNT; i--) {
-            pow = pow / TWO;
+        res        = res + pow;
+        for (int i = -1; i >= -BIT_COUNT; i--) {
+            pow   = pow / TWO;
             int j = BIT_COUNT + i;
             if ((q.val[j >> 3] >> (j & 7)) & 1)
                 res = res + pow;
         }
         Number exp = Number(exponent) * LOG2;
-        Number E = exp.floor();
-        res = res * (exp.fraction() * LN10).exp();
+        Number E   = exp.floor();
+        res        = res * (exp.fraction() * LN10).exp();
         RETURN(res);
     }
 }

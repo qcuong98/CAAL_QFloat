@@ -172,7 +172,7 @@ QFloat operator +(const QFloat &a, const QFloat &b) {
 
 QFloat operator -(const QFloat &a) {
 	QFloat res = a;
-	res.se ^= (1u << 8);
+	res.se ^= 0b1000000000000000;
 	return res;
 }
 
