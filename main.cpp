@@ -1,34 +1,30 @@
-#include "QFloat.h"
+#include <malloc.h>
 #include <iostream>
 #include <string>
-#include <malloc.h>
+#include "QFloat.h"
 
 #define BUFFER 1000
 
-std::istream & operator >> (std::istream &is, QFloat &a) {
-	std::string tmp;
-	is >> tmp;
-	a = Dec2QFloat(tmp.c_str());
-	return is;
+std::istream &operator>>(std::istream &is, QFloat &a) {
+    std::string tmp;
+    is >> tmp;
+    a = Dec2QFloat(tmp.c_str());
+    return is;
 }
 
-std::ostream & operator << (std::ostream &os, const QFloat &a) {
-	char *tmp = QFloat2Dec(a);
-	os << tmp;
+std::ostream &operator<<(std::ostream &os, const QFloat &a) {
+    char *tmp = QFloat2Dec(a);
+    os << tmp;
 
-	free(tmp);
-	return os;
+    free(tmp);
+    return os;
 }
 
 int main() {
     using namespace std;
-    QFloat a = Dec2QFloat("NaN");
+    QFloat a = Dec2QFloat("1e50");
     cout << a << endl;
-    QFloat b;
-    cin >> a >> b;
-    cout << a << " op " << b << endl;
-    cout << "op + = " << a + b << endl;
-    cout << "op - = " << a - b << endl;
-    cout << "op * = " << a * b << endl;
-    cout << "op / = " << a / b << endl;
+    char *c = QFloat2Bin(a);
+    cout << c;
+    free(c);
 }

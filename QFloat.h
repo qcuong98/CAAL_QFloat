@@ -8,25 +8,26 @@
 #define K ((1 << NUMBER_EXPONENT_BITS) - 1)
 
 struct QFloat {
-    int16_t se;  // sign + exponent, sign is MSB
     uint8_t val[NUMBER_SIGNIFICAND_BYTES];
+    int16_t se;  // sign + exponent, sign is MSB
     QFloat();
     static const QFloat Inf;
     static const QFloat NaN;
 };
 
-
 QFloat Dec2QFloat(const char *);
-char *QFloat2Dec(const QFloat&); //remeber to free
+char *QFloat2Dec(const QFloat &);
 
-QFloat operator +(const QFloat &, const QFloat&);
+char *QFloat2Bin(const QFloat &);
 
-QFloat operator -(const QFloat &);
-QFloat operator -(const QFloat &, const QFloat&);
+QFloat operator+(const QFloat &, const QFloat &);
+
+QFloat operator-(const QFloat &);
+QFloat operator-(const QFloat &, const QFloat &);
 
 bool IsInf(const QFloat &);
 bool IsNaN(const QFloat &);
-QFloat operator *(const QFloat &, const QFloat&);
-QFloat operator /(const QFloat &, const QFloat&);
+QFloat operator*(const QFloat &, const QFloat &);
+QFloat operator/(const QFloat &, const QFloat &);
 
 #endif

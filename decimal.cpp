@@ -5,26 +5,9 @@
 #include <iostream>
 using namespace std;
 
-const Number TWO(2);
-const Number ONE(1);
-const Number HALF("0.5");
-const Number LOG2(
-    "0."
-    "3010299956639811952137388947244930267681898814621085413104274611271081892744245094869272521181"
-    "86172041");
-const Number LN10(
-    "2."
-    "3025850929940456840179914546843642076011014886287729760333279009675726096773524802359972050895"
-    "9829834");
-const Number LOG2_10(
-    "3."
-    "3219280948873623478703194294893901758648313930245806120547563958159347766086252158501397433593"
-    "701551");
-const Number LN2(
-    "0."
-    "6931471805599453094172321214581765680755001343602552541206800094933936219696947156058633269964"
-    "18687542");
-const int16_t BIAS = 0b0011111111111111;
+const int16_t BIAS     = 0b0011111111111111;
+const int MAX_EXPONENT = 0b0111111111111111 - BIAS;
+const int MIN_EXPONENT = -BIAS;
 
 struct ParsedStr {
     bool negative          = false;
@@ -128,6 +111,7 @@ static ParsedStr parse_str(const char *s) {
 }
 
 QFloat Dec2QFloat(const char *s) {
+#define GET_I(_x) (_x.sign == 0 ? 0 : _x.d[PRECISION_SIZE])
     if (0 == strcmp(s, "+Inf"))
         return QFloat::Inf;
     if (0 == strcmp(s, "-Inf"))
@@ -137,11 +121,8 @@ QFloat Dec2QFloat(const char *s) {
 
     ParsedStr inp = parse_str(s);
 
-    QFloat res;
-
     Number int_part, float_part;
     int exp;
-
     {
         ParsedStr inp = parse_str(s);
         char *tmp     = (char *)calloc(inp.int_part_len + 1, 1);
@@ -165,141 +146,93 @@ QFloat Dec2QFloat(const char *s) {
         num         = num * (F * LN2).exp();
         int_part    = num.floor();
         float_part  = num.fraction();
-        if (I.sign == 0)
-            exp = 0;
-        else
-            exp = I.d[PRECISION_SIZE];
+        exp         = GET_I(I);
     }
 
     const int MAX_SIZE = sizeof(QFloat::val) * 8;  // 112
-    uint8_t *bits      = (uint8_t *)calloc(MAX_SIZE, 1);
+
+#define FREE              \
+    {                     \
+        free(int_bits);   \
+        free(float_bits); \
+        free(bits);       \
+    }
+    uint8_t *bits       = (uint8_t *)calloc(MAX_SIZE, 1);
+    uint8_t *int_bits   = (uint8_t *)calloc(MAX_SIZE, 1);
+    uint8_t *float_bits = (uint8_t *)calloc(MAX_SIZE, 1);
 
     int int_size = 0;
     while (int_part.sign != 0) {
-        if (int_size < MAX_SIZE)
-            bits[int_size] = int_part.d[PRECISION_SIZE] & 1;
-        int_part = (int_part / TWO).floor();
+        int_bits[int_size % MAX_SIZE] = GET_I(int_part) & 1;
+        int_part                      = (int_part / TWO).floor();
         int_size++;
     }
 
-    if (int_size > 0 && int_size < MAX_SIZE) {
-        memmove(bits + (MAX_SIZE - int_size + 1), bits, int_size - 1);
-        memset(bits, 0, MAX_SIZE - int_size + 1);
-    }
-    if (int_size < MAX_SIZE) {
-        int i = MAX_SIZE - int_size;
-        if (int_size == 0)
-            i = MAX_SIZE - 1;
-        for (; i >= 0; i--) {
-            float_part = float_part * TWO;
-            if (float_part >= ONE) {
-                float_part = float_part.fraction();
-                bits[i]    = 1;
-            } else {
-                bits[i] = 0;
-            }
-        }
+    for (int i = MAX_SIZE - 1; i >= 0; i--) {
+        float_part    = float_part * TWO;
+        float_bits[i] = GET_I(float_part.floor()) != 0;
+        if (float_bits[i])
+            float_part = float_part.fraction();
     }
 
-    int exponent = 0;
-    bool is_zero = false;
-    if (int_size > 0) {
-        exponent = int_size - 1;
-    } else {
-        int i = MAX_SIZE - 1;
-        while (i >= 0 && bits[i] == 0)
-            i--;
-        if (i < 0) {
-            is_zero = true;
-        } else {
-            exponent = -(MAX_SIZE - i);
-            memmove(bits + MAX_SIZE - i + 1, bits, i - 1);
-            memset(bits, 0, MAX_SIZE - i + 1);
+    int exponent = int_size - 1;
+    if (int_size == 0) {
+        exponent = -1;
+        for (int i = MAX_SIZE - 1; i >= 0 && float_bits[i] == 0; i--) {
+            exponent--;
         }
-    }
-
-    for (int i = 0; i < MAX_SIZE; i++) {
-        // Assumming the res.val is zero already
-        if (bits[i] == 1) {
-            res.val[i >> 3] |= 1 << (i & 7);
+        if (exponent < -MAX_SIZE) {
+            FREE;
+            return QFloat();
         }
     }
 
     exponent += exp;
 
-    free(bits);
-
-    if (is_zero) {
-        res.se &= 0b1000000000000000;
-    } else {
-        res.se &= 0b1000000000000000;
-        res.se |= (BIAS + exponent);
-    }
-
-    if (inp.negative)
-        res.se |= 1 << 15;
-
-    return res;
-}
-
-char *QFloat2Dec(const QFloat &q) {
-#define RETURN_STR(_s)                           \
-    {                                            \
-        const char *s = _s;                      \
-        int len       = strlen(s);               \
-        char *r       = (char *)malloc(len + 1); \
-        memcpy(r, s, len + 1);                   \
-        return r;                                \
-    }
-    if (IsNaN(q)) RETURN_STR("NaN");
-    if (IsInf(q)) {
-        if (q.se < 0) RETURN_STR("-Inf");
-        RETURN_STR("+Inf");
-    }
-
-#define RETURN(_X)                    \
-    {                                 \
-        Number _tmp = (_X);           \
-        return _tmp.chop(4).to_str(); \
-    }
-    const int BIT_COUNT = sizeof(QFloat::val) * 8;
-    int exponent        = q.se & 0b0111111111111111;
-    if (exponent == 0) {
-        // denormalized or 0
-        // Fuck denormalization
-        RETURN(Number("0"));
-    }
-
-    exponent -= BIAS;
-    const int THRESHOLD = 100;
-    if (abs(exponent) <= THRESHOLD) {
-        Number res(0ll);
-        Number pow = TWO ^ Number(-BIT_COUNT + exponent);
-        for (int i = 0; i < BIT_COUNT; i++) {
-            if ((q.val[i >> 3] >> (i & 7)) & 1) {
-                res = res + pow;
+    if (exponent >= MAX_EXPONENT) {
+        FREE;
+        return inp.negative ? -QFloat::Inf : QFloat::Inf;
+    } else if (exponent <= MIN_EXPONENT) {
+        int shift = MIN_EXPONENT - exponent;
+        if (shift >= MAX_SIZE) {
+            FREE;
+            return QFloat();
+        }
+        for (int i = MAX_SIZE - shift - 1, float_i = MAX_SIZE - 1; i >= 0; i--) {
+            if (int_size > 0) {
+                int_size--;
+                bits[i] = int_bits[int_size % MAX_SIZE];
+            } else {
+                bits[i] = float_bits[float_i];
+                float_i--;
             }
-            pow = pow * TWO;
         }
-        res = res + pow;
-
-        if (q.se < 0)
-            res = -res;
-
-        RETURN(res);
+        exponent = 0;
     } else {
-        Number res(0ll);
-        Number pow = ONE;
-        res        = res + pow;
-        for (int i = -1; i >= -BIT_COUNT; i--) {
-            pow   = pow / TWO;
-            int j = BIT_COUNT + i;
-            if ((q.val[j >> 3] >> (j & 7)) & 1)
-                res = res + pow;
+        int float_i = MAX_SIZE - 1;
+        while (float_i >= 0 && float_bits[float_i] == 0) float_i--;
+        float_i--;
+        int_size--;
+        for (int i=MAX_SIZE - 1; i >= 0; i--) {
+            if (int_size > 0) {
+                int_size--;
+                bits[i] = int_bits[int_size % MAX_SIZE];
+            } else if (float_i >= 0) {
+                bits[i] = float_bits[float_i];
+                float_i--;
+            }
         }
-        Number exp = Number(exponent) * LOG2;
-        Number E   = exp.floor();
-        res        = res * (exp.fraction() * LN10).exp();
-        RETURN(res);
+        exponent += BIAS;
     }
+
+    QFloat res;
+    if (inp.negative)
+        res.se |= 0b1000000000000000;
+    res.se |= exponent;
+    for (int i = 0; i < MAX_SIZE; i++) {
+        if (bits[i] == 1)
+            res.val[i >> 3] |= 1 << (i & 7);
+    }
+    FREE;
+    return res;
 }
