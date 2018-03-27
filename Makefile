@@ -1,5 +1,5 @@
 build:
-	g++ *.cpp number/*.cpp -Wall -std=c++11 -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
+	g++ *.cpp number/*.cpp -Wall -std=c++11 -g -fsanitize=address,undefined -fno-omit-frame-pointer
 run:
 	@make --no-print-directory
 	(./a.out $(A); rm a.out)

@@ -17,9 +17,9 @@ bool is_number(char c) {
 }
 };  // namespace number
 
-const Number one(1);
-const Number two(2);
-const Number ln10("2.302585092994045684017866");
+const Number one(1ll);
+const Number two(2ll);
+const Number ln10("2.30258509299404568401799145468436420760110148862877297603332790096757260967735248023599720508959829834");
 const Number PI("3.141592653589793238462643383279502884197169399375105820974944592307816406286");
 
 using namespace number;
@@ -511,7 +511,7 @@ Number Number::exp() const {
     Number M(one);
     Number r;
     Number N(one);
-    for (int i = 1; i < 50; i++) {
+    for (int i = 1; i < 500; i++) {
         Number tmp = T / M;
         if (tmp.sign == 0)
             break;
@@ -635,5 +635,11 @@ char *Number::to_str() const {
     char *res           = (char *)malloc(s.length() + 1);
     res[s.length()]     = '\0';
     memcpy(res, s.data(), s.length());
+    return res;
+}
+
+Number Number::chop(int k) const {
+    Number res(*this);
+    for (int i=0; i<PRECISION_SIZE - k; i++) res.d[i] = 0;
     return res;
 }

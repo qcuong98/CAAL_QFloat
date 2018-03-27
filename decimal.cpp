@@ -2,9 +2,15 @@
 #include "QFloat.h"
 #include "number/number.h"
 
+#include <iostream>
+using namespace std;
+
+
 const Number TWO(2);
 const Number ONE(1);
 const Number HALF("0.5");
+const Number LOG2("0.301029995663981195213738894724493026768189881462108541310427461127108189274424509486927252118186172041");
+const Number LN10("2.30258509299404568401799145468436420760110148862877297603332790096757260967735248023599720508959829834");
 const int16_t BIAS = 0b0011111111111111;
 
 struct ParsedStr {
@@ -129,7 +135,7 @@ QFloat Dec2QFloat(const char *s) {
         int_size++;
     }
 
-    if (int_size > 0) {
+    if (int_size > 0 && int_size < MAX_SIZE) {
         memmove(bits + (MAX_SIZE - int_size + 1), bits, int_size - 1);
         memset(bits, 0, MAX_SIZE - int_size + 1);
     }
@@ -193,25 +199,44 @@ QFloat Dec2QFloat(const char *s) {
 }
 
 char *QFloat2Dec(const QFloat &q) {
+#define RETURN(_X) { Number _tmp = (_X); return _tmp.chop(4).to_str(); }
+    const int BIT_COUNT = sizeof(QFloat::val) * 8;
     int exponent = q.se & 0b0111111111111111;
     if (exponent == 0) {
         // denormalized or 0
-        return Number("0").to_str();
+        // Fuck denormalization
+        RETURN(Number("0"));
     }
 
     exponent -= BIAS;
-    const int BIT_COUNT = sizeof(QFloat::val) * 8;
-    Number res(0ll);
-    Number pow = TWO ^ Number(-BIT_COUNT + exponent);
-    for (int i = 0; i < BIT_COUNT; i++) {
-        if ((q.val[i >> 3] >> (i & 7)) & 1) {
-            res = res + pow;
+    const int THRESHOLD = 100;
+    if (abs(exponent) <= THRESHOLD) {
+        Number res(0ll);
+        Number pow = TWO ^ Number(-BIT_COUNT + exponent);
+        for (int i = 0; i < BIT_COUNT; i++) {
+            if ((q.val[i >> 3] >> (i & 7)) & 1) {
+                res = res + pow;
+            }
+            pow = pow * TWO;
         }
-        pow = pow * TWO;
+        res = res + pow;
+
+        if (q.se < 0) res = -res;
+
+        RETURN(res);
+    } else {
+        Number res(0ll);
+        Number pow = ONE;
+        res = res + pow;
+        for (int i=-1; i >= -BIT_COUNT; i--) {
+            pow = pow / TWO;
+            int j = BIT_COUNT + i;
+            if ((q.val[j >> 3] >> (j & 7)) & 1)
+                res = res + pow;
+        }
+        Number exp = Number(exponent) * LOG2;
+        Number E = exp.floor();
+        res = res * (exp.fraction() * LN10).exp();
+        RETURN(res);
     }
-    res = res + pow;
-
-    if (q.se < 0) res = -res;
-
-    return res.to_str();
 }

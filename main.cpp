@@ -22,6 +22,6 @@ std::ostream & operator << (std::ostream &os, const QFloat &a) {
 
 int main() {
     using namespace std;
-    QFloat a = Dec2QFloat("10000000000000000000000.1231");
+    QFloat a = Dec2QFloat("1.00231");
     cout << a;
 }
