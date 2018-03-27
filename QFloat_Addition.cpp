@@ -57,7 +57,7 @@ EFloat to_efloat(const QFloat &a) {
 		e.exp = 1; //denormalized number
 	}
 
-	e.sign = ((uint16_t)a.se) >> 15;
+	e.sign = ((uint16_t)a.se) >> NUMBER_EXPONENT_BITS;
 
 	return e;
 }
@@ -157,7 +157,7 @@ QFloat to_qfloat(EFloat e) {
 	if (e.exp >= K) //infinite
 		memset(e.val, 0, sizeof(e.val));
 
-	res.se = (((uint16_t)sign) << 15) | e.exp;
+	res.se = (((uint16_t)sign) << NUMBER_EXPONENT_BITS) | e.exp;
 	memcpy(res.val, e.val, sizeof(res.val));
 
 	return res;
@@ -172,7 +172,7 @@ QFloat operator +(const QFloat &a, const QFloat &b) {
 
 QFloat operator -(const QFloat &a) {
 	QFloat res = a;
-	res.se ^= (1u << 8);
+	res.se ^= (1u << NUMBER_EXPONENT_BITS);
 	return res;
 }
 

@@ -91,4 +91,86 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	return c;
 }
 
+#define ge(a, b) (memcmp((a),(b),sizeof(a)) >= 0)
 
+void shift_right(uint8_t *a) {
+		uint8_t l_bit = 0, r_bit;
+		for (int k = NUMBER_SIGNIFICAND_BYTES * 2; k >= 0; --k) {
+			r_bit = (a[k] & 1);
+			a[k] = (a[k] >> 1) | (l_bit << 7);
+			l_bit = r_bit;
+		}
+}
+
+void shift_left(uint8_t *a) {
+		uint8_t l_bit, r_bit = 0;
+		for (int k = 0; k <= NUMBER_SIGNIFICAND_BYTES * 2; ++k) {
+			l_bit = (a[k] >> 7);
+			a[k] = (a[k] << 1) | r_bit;
+			r_bit = l_bit;
+		}
+}
+
+QFloat operator /(const QFloat &a, const QFloat &b) {
+	uint16_t sign_a = (a.se >> NUMBER_EXPONENT_BITS);
+	uint16_t exponent_a = a.se & K;
+	uint16_t sign_b = (b.se >> NUMBER_EXPONENT_BITS);
+	uint16_t exponent_b = b.se & K;
+
+	uint16_t sign_c = sign_a ^ sign_b;
+	
+	int32_t exponent_c = (int32_t)exponent_a - exponent_b + BIAS;
+
+	uint8_t x_val[NUMBER_SIGNIFICAND_BYTES * 2 + 1];
+	memset(x_val, 0, sizeof(x_val));
+	memcpy(x_val + NUMBER_SIGNIFICAND_BYTES, a.val, sizeof(a.val));
+
+	uint8_t y_val[NUMBER_SIGNIFICAND_BYTES * 2 + 1];
+	memset(y_val, 0, sizeof(y_val));
+	memcpy(y_val + NUMBER_SIGNIFICAND_BYTES, b.val, sizeof(b.val));
+
+	x_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
+	y_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
+
+	if (!ge(x_val, y_val)) {
+		shift_left(y_val);
+		--exponent_c;
+	}
+
+	uint8_t c_val[NUMBER_SIGNIFICAND_BYTES + 1];
+	memset(c_val, 0, sizeof(c_val));
+
+	int i1 = NUMBER_SIGNIFICAND_BYTES;
+	int i2 = 0;
+	while (i1 >= 0) {
+		if (ge(x_val, y_val)) { //x>=y	
+			// minus x -= y		
+			int carry = 0;
+			for (int j = 0; j <= 2*NUMBER_SIGNIFICAND_BYTES; j++) {
+				int16_t tmp = (int16_t)x_val[j] - y_val[j] - carry;
+				if (tmp < 0){
+					carry = 1;
+					tmp += UINT8_MAX;
+				} else {
+					carry = 0;
+				}
+				x_val[j] = tmp;
+			}
+			c_val[i1] |= 1u << i2;
+		}
+
+		shift_right(y_val);
+
+		if (i2) {
+			--i2;
+		} else {
+			--i1;
+			i2 = 7;
+		}
+	}
+
+	QFloat c;
+	c.se = (sign_c << NUMBER_EXPONENT_BITS) | exponent_c;
+	memcpy(c.val, c_val, sizeof(c.val));
+	return c;	
+}

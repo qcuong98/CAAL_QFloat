@@ -24,5 +24,9 @@ int main() {
     using namespace std;
     QFloat a, b;
     cin >> a >> b;
-    cout << a << " +/* " << b << " = " << a + b << ", " << a * b << endl;
+    cout << a << " op " << b << endl;
+    cout << "op + = " << a + b << endl;
+    cout << "op - = " << a - b << endl;
+    cout << "op * = " << a * b << endl;
+    cout << "op / = " << a / b << endl;
 }
