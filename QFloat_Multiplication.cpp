@@ -16,12 +16,6 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	int32_t exponent_c = (int32_t)exponent_a + exponent_b - BIAS;
 
 	QFloat c;
-
-	if (exponent_a >= K) {  //overflow
-		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
-		return c; //return INF
-	}
-
 	/* (1+x) * (1+y) = 1 + x + y + x*y */
 
 	if ((exponent_a == K && same(a.val, c.val)) || (exponent_b == K && same(b.val, c.val))) { //inf
@@ -81,6 +75,13 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 		else
 			++exponent_c;
 	}
+
+	if (exponent_c >= K) {  //overflow
+		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
+		memset(c.val, 0, sizeof(c.val));
+		return c; //return INF
+	}
+	
 	c.se = sign_c << NUMBER_EXPONENT_BITS;
 
 	if (c_val[NUMBER_SIGNIFICAND_BYTES * 2]) //not denormalized
