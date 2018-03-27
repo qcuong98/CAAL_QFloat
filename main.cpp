@@ -3,8 +3,6 @@
 #include <string>
 #include "QFloat.h"
 
-#define BUFFER 1000
-
 std::istream &operator>>(std::istream &is, QFloat &a) {
     std::string tmp;
     is >> tmp;
@@ -22,6 +20,6 @@ std::ostream &operator<<(std::ostream &os, const QFloat &a) {
 
 int main() {
     using namespace std;
-    QFloat a = Bin2QFloat("0_100000001101001_0011101110001011010110110101000001010110111000010110101100111011111000000100000000000000000000000000000000000000");
+    QFloat a = Dec2QFloat("1e32");
     cout << a << endl;
 }

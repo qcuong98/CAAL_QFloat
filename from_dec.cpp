@@ -8,6 +8,14 @@ using namespace std;
 const int16_t BIAS     = 0b0011111111111111;
 const int MAX_EXPONENT = 0b0111111111111111 - BIAS;
 const int MIN_EXPONENT = -BIAS;
+const QFloat TEN32     = Bin2QFloat(
+    "0_100000001101001_"
+    "0011101110001011010110110101000001010110111000010110101100111011111000000100000000000000000000"
+    "000000000000000000");
+const QFloat TEN = Bin2QFloat(
+    "0_100000000000010_"
+    "0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000");
 
 struct ParsedStr {
     bool negative          = false;
@@ -122,7 +130,6 @@ QFloat Dec2QFloat(const char *s) {
     ParsedStr inp = parse_str(s);
 
     Number int_part, float_part;
-    int exp;
     {
         ParsedStr inp = parse_str(s);
         char *tmp     = (char *)calloc(inp.int_part_len + 1, 1);
@@ -139,14 +146,8 @@ QFloat Dec2QFloat(const char *s) {
             free(tmp);
         }
 
-        Number num  = _int_part + _float_part;
-        Number _exp = Number(inp.exponent) * LOG2_10;
-        Number I    = _exp.floor();
-        Number F    = _exp.fraction();
-        num         = num * (F * LN2).exp();
-        int_part    = num.floor();
-        float_part  = num.fraction();
-        exp         = GET_I(I);
+        int_part   = _int_part;
+        float_part = _float_part;
     }
 
     const int MAX_SIZE = sizeof(QFloat::val) * 8;  // 112
@@ -187,8 +188,6 @@ QFloat Dec2QFloat(const char *s) {
         }
     }
 
-    exponent += exp;
-
     if (exponent >= MAX_EXPONENT) {
         FREE;
         return inp.negative ? -QFloat::Inf : QFloat::Inf;
@@ -210,10 +209,11 @@ QFloat Dec2QFloat(const char *s) {
         exponent = 0;
     } else {
         int float_i = MAX_SIZE - 1;
-        while (float_i >= 0 && float_bits[float_i] == 0) float_i--;
+        while (float_i >= 0 && float_bits[float_i] == 0)
+            float_i--;
         float_i--;
         int_size--;
-        for (int i=MAX_SIZE - 1; i >= 0; i--) {
+        for (int i = MAX_SIZE - 1; i >= 0; i--) {
             if (int_size > 0) {
                 int_size--;
                 bits[i] = int_bits[int_size % MAX_SIZE];
@@ -234,5 +234,17 @@ QFloat Dec2QFloat(const char *s) {
             res.val[i >> 3] |= 1 << (i & 7);
     }
     FREE;
+
+    if (inp.exponent != 0) {
+        bool neg = inp.exponent < 0;
+        int exp  = neg ? -inp.exponent : inp.exponent;
+        for (int c = exp >> 5; c > 0; c--) {
+            res = neg ? res / TEN32 : res * TEN32;
+        }
+        for (int c = exp & 31; c > 0; c--) {
+            res = neg ? res / TEN : res * TEN;
+        }
+    }
+
     return res;
 }
