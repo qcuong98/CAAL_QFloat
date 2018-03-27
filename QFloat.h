@@ -26,5 +26,6 @@ QFloat operator -(const QFloat &, const QFloat&);
 
 bool IsInf(const QFloat &);
 bool IsNaN(const QFloat &);
+QFloat operator *(const QFloat &, const QFloat&);
 
 #endif

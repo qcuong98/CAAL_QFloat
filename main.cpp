@@ -23,5 +23,8 @@ std::ostream & operator << (std::ostream &os, const QFloat &a) {
 int main() {
     using namespace std;
     QFloat a = Dec2QFloat("NaN");
-    cout << a;
+    cout << a << endl;
+    QFloat b;
+    cin >> a >> b;
+    cout << a << " +/* " << b << " = " << a + b << ", " << a * b << endl;
 }
