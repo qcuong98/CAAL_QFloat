@@ -13,7 +13,6 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 
 	uint16_t sign_c = sign_a ^ sign_b;
 	
-	int32_t exponent_c = (int32_t)exponent_a + exponent_b - BIAS;
 
 	QFloat c;
 	/* (1+x) * (1+y) = 1 + x + y + x*y */
@@ -24,11 +23,17 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 		return c;
 	}
 
+	if (same(a,c))
+		return a;
+	if (same(b,c))
+		return b;
+
 	if (exponent_a == K && !same(a.val, c.val))
 		return a; //NaN
 	if (exponent_b == K && !same(b.val, c.val))
 		return b;
 
+	int32_t exponent_c = (int32_t)exponent_a + exponent_b - BIAS;
 	uint16_t tmp;
 
 	uint8_t c_val[NUMBER_SIGNIFICAND_BYTES * 2 + 1];
