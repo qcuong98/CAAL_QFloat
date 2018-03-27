@@ -33,6 +33,8 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	if (exponent_b == K && !same(b.val, c.val))
 		return b;
 
+	/* not process denormalized number */
+
 	int32_t exponent_c = (int32_t)exponent_a + exponent_b - BIAS;
 	uint16_t tmp;
 
