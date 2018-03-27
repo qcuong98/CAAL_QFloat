@@ -494,8 +494,10 @@ Number Number::operator^(const Number &b) const {
 
 Number Number::floor() const {
     Number r(*this);
-    memset(r.d, 0, sizeof(LL) * std::min(PRECISION_SIZE, r.n));
-    r.unpad();
+    if (r.sign != 0) {
+        memset(r.d, 0, sizeof(LL) * std::min(PRECISION_SIZE, r.n));
+        r.unpad();
+    }
     return r;
 }
 

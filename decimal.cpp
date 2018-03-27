@@ -11,6 +11,8 @@ const Number ONE(1);
 const Number HALF("0.5");
 const Number LOG2("0.301029995663981195213738894724493026768189881462108541310427461127108189274424509486927252118186172041");
 const Number LN10("2.30258509299404568401799145468436420760110148862877297603332790096757260967735248023599720508959829834");
+const Number LOG2_10("3.3219280948873623478703194294893901758648313930245806120547563958159347766086252158501397433593701551");
+const Number LN2("0.693147180559945309417232121458176568075500134360255254120680009493393621969694715605863326996418687542");
 const int16_t BIAS = 0b0011111111111111;
 
 struct ParsedStr {
@@ -113,16 +115,40 @@ static ParsedStr parse_str(const char *s) {
     return p;
 }
 
-// Ignoring exponent in s
 QFloat Dec2QFloat(const char *s) {
     ParsedStr inp = parse_str(s);
 
     QFloat res;
 
-    char *tmp = (char *)calloc(inp.int_part_len + 1, 1);
-    memcpy(tmp, inp.int_part, inp.int_part_len);
-    Number int_part(tmp);
-    free(tmp);
+    Number int_part, float_part;
+    int exp;
+
+    {
+        ParsedStr inp = parse_str(s);
+        char *tmp = (char *)calloc(inp.int_part_len + 1, 1);
+        memcpy(tmp, inp.int_part, inp.int_part_len);
+        Number _int_part(tmp);
+        free(tmp);
+
+        Number _float_part(0ll);
+        if (inp.float_part_len > 0) {
+            tmp = (char *)calloc(inp.float_part_len + 3, 1);
+            strcpy(tmp, "0.");
+            memcpy(tmp + 2, inp.float_part, inp.float_part_len);
+            _float_part = tmp;
+            free(tmp);
+        }
+
+        Number num = _int_part + _float_part;
+        Number _exp = Number(inp.exponent) * LOG2_10;
+        Number I = _exp.floor();
+        Number F = _exp.fraction();
+        num = num * (F * LN2).exp();
+        int_part = num.floor();
+        float_part = num.fraction();
+        if (I.sign == 0) exp = 0;
+        else exp = I.d[PRECISION_SIZE];
+    }
 
     const int MAX_SIZE = sizeof(QFloat::val) * 8;  // 112
     uint8_t *bits      = (uint8_t *)calloc(MAX_SIZE, 1);
@@ -139,12 +165,7 @@ QFloat Dec2QFloat(const char *s) {
         memmove(bits + (MAX_SIZE - int_size + 1), bits, int_size - 1);
         memset(bits, 0, MAX_SIZE - int_size + 1);
     }
-    if (int_size < MAX_SIZE && inp.float_part_len > 0) {
-        char *tmp = (char *)calloc(inp.float_part_len + 3, 1);
-        strcpy(tmp, "0.");
-        memcpy(tmp + 2, inp.float_part, inp.float_part_len);
-        Number float_part(tmp);
-        free(tmp);
+    if (int_size < MAX_SIZE) {
         int i = MAX_SIZE - int_size;
         if (int_size == 0)
             i = MAX_SIZE - 1;
@@ -182,6 +203,8 @@ QFloat Dec2QFloat(const char *s) {
             res.val[i >> 3] |= 1 << (i & 7);
         }
     }
+
+    exponent += exp;
 
     free(bits);
 
