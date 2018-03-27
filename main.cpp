@@ -22,7 +22,7 @@ std::ostream &operator<<(std::ostream &os, const QFloat &a) {
 
 int main() {
     using namespace std;
-    QFloat a = Dec2QFloat("1e50");
+    QFloat a = Dec2QFloat("100000000000000000000000000000000");
     cout << a << endl;
     char *c = QFloat2Bin(a);
     cout << c;

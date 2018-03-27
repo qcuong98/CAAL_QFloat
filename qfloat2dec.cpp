@@ -16,27 +16,33 @@ char *QFloat2Dec(const QFloat &q) {
         memcpy(r, s, len + 1);                   \
         return r;                                \
     }
-    if (IsNaN(q)) RETURN_STR("NaN");
+    if (IsNaN(q))
+        RETURN_STR("NaN");
     if (IsInf(q)) {
-        if (q.se < 0) RETURN_STR("-Inf");
+        if (q.se < 0)
+            RETURN_STR("-Inf");
         RETURN_STR("+Inf");
     }
 
-#define RETURN(_X)                    \
-    {                                 \
-        Number _tmp = (_X);           \
-        return _tmp.chop(4).to_str(); \
-    }
-    const int BIT_COUNT = sizeof(QFloat::val) * 8;
-    int exponent        = q.se & 0b0111111111111111;
+    const int BIT_COUNT  = sizeof(QFloat::val) * 8;
+    int exponent         = q.se & 0b0111111111111111;
+    bool is_denormalized = false;
     if (exponent == 0) {
         // denormalized or 0
-        // Fuck denormalization
-        RETURN(Number("0"));
+        is_denormalized = true;
+        bool is_zero    = true;
+        for (int i = 0; i < BIT_COUNT; i++) {
+            if ((q.val[i >> 3] >> (i & 7)) & 1) {
+                is_zero = false;
+                break;
+            }
+        }
+        if (is_zero)
+            return Number(0ll).to_str();
     }
 
     exponent -= BIAS;
-    const int THRESHOLD = 100;
+    const int THRESHOLD = 112;
     if (abs(exponent) <= THRESHOLD) {
         Number res(0ll);
         Number pow = TWO ^ Number(-BIT_COUNT + exponent);
@@ -51,11 +57,12 @@ char *QFloat2Dec(const QFloat &q) {
         if (q.se < 0)
             res = -res;
 
-        RETURN(res);
+        return res.chop(4).to_str();
     } else {
         Number res(0ll);
         Number pow = ONE;
-        res        = res + pow;
+        if (!is_denormalized)
+            res = res + pow;
         for (int i = -1; i >= -BIT_COUNT; i--) {
             pow   = pow / TWO;
             int j = BIT_COUNT + i;
@@ -65,12 +72,12 @@ char *QFloat2Dec(const QFloat &q) {
         Number exp = Number(exponent) * LOG2;
         Number E   = exp.floor();
         res        = res * (exp.fraction() * LN10).exp();
-        
-        char *s = res.chop(4).to_str();
-        int len = strlen(s);
-        s = (char*)realloc(s, len + 10);
+
+        char *s     = res.chop(4).to_str();
+        int len     = strlen(s);
+        s           = (char *)realloc(s, len + 10);
         char *exp_s = E.to_str();
-        s[len] = 'e';
+        s[len]      = 'e';
         strcpy(s + len + 1, exp_s);
         free(exp_s);
         return s;
