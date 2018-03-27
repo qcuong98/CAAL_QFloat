@@ -22,6 +22,7 @@ std::ostream & operator << (std::ostream &os, const QFloat &a) {
 
 int main() {
     using namespace std;
-    QFloat a = Dec2QFloat("10000000000000000000000.1231");
-    cout << a;
+    QFloat a, b;
+    cin >> a >> b;
+    cout << a << " +/* " << b << " = " << a + b << ", " << a * b << endl;
 }
