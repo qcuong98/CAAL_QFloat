@@ -53,12 +53,6 @@ class Number {
     Number fraction() const;
     Number floor() const;
     Number abs() const;
-    Number sin() const;
-    Number cos() const;
-    Number tan() const;
-    Number asin() const;
-    Number acos() const;
-    Number atan() const;
     Number exp() const;
     Number chop(int) const;
 
