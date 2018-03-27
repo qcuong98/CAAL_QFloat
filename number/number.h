@@ -6,7 +6,7 @@
 const LL B               = 100000000;
 const LL SIZE            = 8;
 const LL M[]             = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000};
-const int PRECISION_SIZE = 14;
+const int PRECISION_SIZE = 12;
 const int PRECISION      = PRECISION_SIZE * SIZE;
 
 
@@ -61,6 +61,7 @@ class Number {
     Number acos() const;
     Number atan() const;
     Number exp() const;
+    Number chop(int) const;
 
     friend std::ostream &operator<<(std::ostream &, const Number &);
     char *to_str() const;
