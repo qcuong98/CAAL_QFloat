@@ -65,6 +65,7 @@ char *QFloat2Dec(const QFloat &Q) {
 
         return sign(res.round().to_str(), Q.se);
     } else {
+	++exponent;
         Number res(0ll);
         Number pow = ONE;
         if (!is_denormalized)
