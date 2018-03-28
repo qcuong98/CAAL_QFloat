@@ -18,8 +18,8 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	/* (1+x) * (1+y) = 1 + x + y + x*y */
 
 	if ((exponent_a == K && same(a.val, c.val)) || (exponent_b == K && same(b.val, c.val))) { //inf
+		c.val[0] |= same(a, c) || same(b, c); //inf * zero is Na	
 		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
-		c.val[0] |= same(a, c) || same(b, c); //inf * zero is NaN
 		return c;
 	}
 
@@ -43,16 +43,16 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 
 	/* x*y */
 	for (int i = 0; i < NUMBER_SIGNIFICAND_BYTES; ++i)
-			for (int j = 0; j < NUMBER_SIGNIFICAND_BYTES; ++j) {
-					int k = i + j;
+		for (int j = 0; j < NUMBER_SIGNIFICAND_BYTES; ++j) {
+			int k = i + j;
 
-					tmp = (uint16_t)a.val[i] * b.val[j];
-					for (;tmp && k <= NUMBER_SIGNIFICAND_BYTES * 2; ++k) {
-						tmp += c_val[k];
-						c_val[k] = tmp & UINT8_MAX;
-						tmp >>= 8;
-					}
+			tmp = (uint16_t)a.val[i] * b.val[j];
+			for (;tmp && k <= NUMBER_SIGNIFICAND_BYTES * 2; ++k) {
+				tmp += c_val[k];
+				c_val[k] = tmp & UINT8_MAX;
+				tmp >>= 8;
 			}
+		}
 
 	/* x + y */
 	tmp = 0;
@@ -134,6 +134,35 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	
 	int32_t exponent_c = (int32_t)exponent_a - exponent_b + BIAS;
 
+	QFloat c;
+
+	if ((exponent_b == K && same(b.val, c.val))) { //b is +inf
+		if (exponent_a == K) //NaN or inf 
+			return QFloat::NaN; //NaN
+
+		c.se = sign_c << NUMBER_EXPONENT_BITS;
+		return c; //signed zero
+	}
+	
+	if (same(b,c)) { // b is zero
+		if (same(a,c)) //a is zero
+			return QFloat::NaN;
+
+		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
+		return c;
+	}
+
+	if (same(a,c)) { //a is zero
+		c.se = sign_c << NUMBER_EXPONENT_BITS;
+		return c;
+	}
+
+	if (exponent_a == K && !same(a.val, c.val))
+		return a; //NaN
+	if (exponent_b == K && !same(b.val, c.val))
+		return b;
+
+
 	uint8_t x_val[NUMBER_SIGNIFICAND_BYTES * 2 + 1];
 	memset(x_val, 0, sizeof(x_val));
 	memcpy(x_val + NUMBER_SIGNIFICAND_BYTES, a.val, sizeof(a.val));
@@ -182,7 +211,6 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 		}
 	}
 
-	QFloat c;
 	c.se = (sign_c << NUMBER_EXPONENT_BITS) | exponent_c;
 	memcpy(c.val, c_val, sizeof(c.val));
 	return c;	
