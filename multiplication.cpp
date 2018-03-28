@@ -122,13 +122,12 @@ void shift_left(uint8_t *a) {
 
 QFloat operator /(const QFloat &a, const QFloat &b) {
 	uint16_t sign_a = (a.se >> NUMBER_EXPONENT_BITS);
-	uint16_t exponent_a = a.se & K;
+	int32_t exponent_a = a.se & K;
 	uint16_t sign_b = (b.se >> NUMBER_EXPONENT_BITS);
-	uint16_t exponent_b = b.se & K;
+	int32_t exponent_b = b.se & K;
 
 	uint16_t sign_c = sign_a ^ sign_b;
 	
-	int32_t exponent_c = (int32_t)exponent_a - exponent_b + BIAS;
 
 	QFloat c;
 
@@ -167,15 +166,35 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	memset(y_val, 0, sizeof(y_val));
 	memcpy(y_val + NUMBER_SIGNIFICAND_BYTES, b.val, sizeof(b.val));
 
-	x_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
-	y_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
+
+	if (exponent_a != 0) { //denom 
+		x_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
+	} else {
+		exponent_a = 1;
+		while (x_val[NUMBER_SIGNIFICAND_BYTES * 2] == 0) {
+			--exponent_a;
+			shift_left(x_val);
+		}
+	}
+
+	if (exponent_b != 0) { //denom 
+		y_val[NUMBER_SIGNIFICAND_BYTES * 2] = 1;
+	} else {
+		exponent_b = 1;
+		while (y_val[NUMBER_SIGNIFICAND_BYTES * 2] == 0) {
+			--exponent_b;
+			shift_left(y_val);
+		}
+	}
 
 	if (!ge(x_val, y_val)) {
 		shift_left(x_val);
-		--exponent_c;
+		--exponent_a;
 	}
 
-	uint8_t c_val[NUMBER_SIGNIFICAND_BYTES + 1];
+	int32_t exponent_c = exponent_a - exponent_b + BIAS;
+	
+	uint8_t c_val[2 * NUMBER_SIGNIFICAND_BYTES + 1];
 	memset(c_val, 0, sizeof(c_val));
 
 	int i1 = NUMBER_SIGNIFICAND_BYTES;
@@ -207,7 +226,16 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 		}
 	}
 
-	c.se = (sign_c << NUMBER_EXPONENT_BITS) | exponent_c;
+	while (exponent_c <= 0) {
+		//denom number
+		shift_right(c_val);
+		++exponent_c;
+	}
+
+	if (c_val[NUMBER_SIGNIFICAND_BYTES] == 0)
+		exponent_c = 0;
+
+	c.se = combine(sign_c, exponent_c);
 	memcpy(c.val, c_val, sizeof(c.val));
 	return c;	
 }
