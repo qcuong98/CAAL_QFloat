@@ -18,6 +18,7 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	QFloat c;
 	/* (1+x) * (1+y) = 1 + x + y + x*y */
 
+
 	if (IsInf(a) || IsInf(b)) { //inf
 		c.val[0] |= IsZero(a) || IsZero(b); //inf * zero is Na	
 		c.se = combine(sign_c, K);
@@ -30,6 +31,17 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 		return b;
 
 	/* not process denormalized number */
+
+	bool denom_a = false, denom_b = false;
+	if (exponent_a == 0) {
+		denom_a = true;
+		exponent_a = 1;
+	}
+
+	if (exponent_b == 0) {
+		denom_b = true;
+		exponent_b = 1;
+	}
 
 	int32_t exponent_c = (int32_t)exponent_a + exponent_b - BIAS;
 	uint16_t tmp;
@@ -50,18 +62,30 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 			}
 		}
 
-	/* x + y */
+	/* +x if y is not denom */
+	if (denom_a && denom_b)
+		goto result;
+
 	tmp = 0;
+
 	for (int i = 0; i < NUMBER_SIGNIFICAND_BYTES; ++i) {
-		tmp += (int16_t)a.val[i] + b.val[i] + c_val[i + NUMBER_SIGNIFICAND_BYTES];
+		
+		if (!denom_b)
+			tmp += a.val[i];
+		if (!denom_a)
+			tmp += b.val[i];
+
+		tmp += c_val[i + NUMBER_SIGNIFICAND_BYTES];
 		c_val[i + NUMBER_SIGNIFICAND_BYTES] = tmp & UINT8_MAX;
 		tmp >>= 8;
 	}
 	c_val[NUMBER_SIGNIFICAND_BYTES * 2] += tmp; 
 
 	/* + 1 */
-	c_val[NUMBER_SIGNIFICAND_BYTES * 2] += 1;
+	if (!denom_a && !denom_b)
+		c_val[NUMBER_SIGNIFICAND_BYTES * 2] += 1;
 
+result:
 	while (c_val[NUMBER_SIGNIFICAND_BYTES * 2] > 1 || exponent_c < 1) {
 		/* significand shift right 1 */
 		bool zero = 1;
@@ -193,7 +217,12 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	}
 
 	int32_t exponent_c = exponent_a - exponent_b + BIAS;
-	
+
+	if (exponent_c >= K) { //infinite
+		c.se = combine(sign_c, K);
+		return c;
+	}
+
 	uint8_t c_val[2 * NUMBER_SIGNIFICAND_BYTES + 1];
 	memset(c_val, 0, sizeof(c_val));
 
