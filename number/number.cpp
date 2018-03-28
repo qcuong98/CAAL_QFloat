@@ -541,3 +541,17 @@ Number Number::chop(int k) const {
     for (int i=0; i<PRECISION_SIZE - k; i++) res.d[i] = 0;
     return res;
 }
+
+Number Number::round() const {
+    const int P = 4;
+    if (this->sign == 0) return *this;
+    if (P >= PRECISION_SIZE) return *this;
+    Number r = *this;
+    LL d = r.d[PRECISION_SIZE - P - 1];
+    if (d >= B / 2) {
+        Number small = ONE;
+        small.d[PRECISION_SIZE - P] = 1;
+        r = r + small.fraction();
+    }
+    return r.chop(P);
+}

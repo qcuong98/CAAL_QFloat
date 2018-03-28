@@ -57,7 +57,7 @@ char *QFloat2Dec(const QFloat &q) {
         if (q.se < 0)
             res = -res;
 
-        return res.chop(4).to_str();
+        return res.round().to_str();
     } else {
         Number res(0ll);
         Number pow = ONE;
@@ -73,7 +73,7 @@ char *QFloat2Dec(const QFloat &q) {
         Number E   = exp.floor();
         res        = res * (exp.fraction() * LN10).exp();
 
-        char *s     = res.chop(4).to_str();
+        char *s     = res.round().to_str();
         int len     = strlen(s);
         s           = (char *)realloc(s, len + 10);
         char *exp_s = E.to_str();
