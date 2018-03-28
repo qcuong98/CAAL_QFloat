@@ -123,7 +123,7 @@ QFloat to_qfloat(EFloat e) {
 
 	if (e.NaN || e.inf) {
 		memcpy(res.val, e.val, sizeof(res.val));
-		res.se = (((uint8_t)e.sign) << 7) | K;
+		res.se = (((uint16_t)e.sign) << NUMBER_EXPONENT_BITS) | K;
 		return res;
 	}
 

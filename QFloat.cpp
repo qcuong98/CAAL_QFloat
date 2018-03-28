@@ -32,3 +32,10 @@ bool IsNaN(const QFloat &q) {
     for (int i=0; i<NUMBER_SIGNIFICAND_BYTES; i++) if (q.val[i] != 0) return true;
     return false;
 }
+
+bool IsZero(const QFloat &q) {
+    if ((q.se & 0b0111111111111111) != 0) return false;
+    for (int i=0; i<NUMBER_SIGNIFICAND_BYTES; i++) if (q.val[i] != 0) return false;
+    return true;
+}
+
