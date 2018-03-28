@@ -466,6 +466,7 @@ Number Number::fraction() const {
     memcpy(f.d, d, PRECISION_SIZE * sizeof(LL));
     f.d[PRECISION_SIZE] = 0;
     f.unpad();
+    f.sign = this->sign;
     return f;
 }
 
@@ -513,7 +514,7 @@ Number Number::exp() const {
     Number M(one);
     Number r;
     Number N(one);
-    for (int i = 1; i < 500; i++) {
+    for (int i = 1; i < 1000; i++) {
         Number tmp = T / M;
         if (tmp.sign == 0)
             break;
