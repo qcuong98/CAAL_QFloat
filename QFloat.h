@@ -28,6 +28,7 @@ QFloat operator-(const QFloat &, const QFloat &);
 
 bool IsInf(const QFloat &);
 bool IsNaN(const QFloat &);
+bool IsZero(const QFloat &);
 QFloat operator*(const QFloat &, const QFloat &);
 QFloat operator/(const QFloat &, const QFloat &);
 

@@ -1,7 +1,8 @@
 #include "QFloat.h"
 
 #define BIAS ((1u << (NUMBER_EXPONENT_BITS - 1)) - 1)
-#define same(a, b) (memcmp(&(a), &(b), sizeof(a)) == 0)
+
+#define combine(sign, exp) ((((uint16_t)sign) << NUMBER_EXPONENT_BITS) | exp)
 
 QFloat operator * (const QFloat& a, const QFloat& b) {
 	/* handle denormalized floating point */
@@ -17,20 +18,15 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	QFloat c;
 	/* (1+x) * (1+y) = 1 + x + y + x*y */
 
-	if ((exponent_a == K && same(a.val, c.val)) || (exponent_b == K && same(b.val, c.val))) { //inf
-		c.val[0] |= same(a, c) || same(b, c); //inf * zero is Na	
-		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
+	if (IsInf(a) || IsInf(b)) { //inf
+		c.val[0] |= IsZero(a) || IsZero(b); //inf * zero is Na	
+		c.se = combine(sign_c, K);
 		return c;
 	}
 
-	if (same(a,c))
+	if (IsZero(a) || IsNaN(a))
 		return a;
-	if (same(b,c))
-		return b;
-
-	if (exponent_a == K && !same(a.val, c.val))
-		return a; //NaN
-	if (exponent_b == K && !same(b.val, c.val))
+	if (IsZero(b) || IsNaN(b))
 		return b;
 
 	/* not process denormalized number */
@@ -136,31 +132,31 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 
 	QFloat c;
 
-	if ((exponent_b == K && same(b.val, c.val))) { //b is +inf
+	if (IsNaN(a))
+		return a; //NaN
+	if (IsNaN(b))
+		return b;
+
+	if (IsInf(b)) { //b is +inf
 		if (exponent_a == K) //NaN or inf 
 			return QFloat::NaN; //NaN
 
-		c.se = sign_c << NUMBER_EXPONENT_BITS;
+		c.se = combine(sign_c, 0);
 		return c; //signed zero
 	}
 	
-	if (same(b,c)) { // b is zero
-		if (same(a,c)) //a is zero
+	if (IsZero(b)) { // b is zero
+		if (IsZero(a)) //a is zero
 			return QFloat::NaN;
 
-		c.se = (sign_c << NUMBER_EXPONENT_BITS) | K;
+		c.se = combine(sign_c, K);
 		return c;
 	}
 
-	if (same(a,c)) { //a is zero
-		c.se = sign_c << NUMBER_EXPONENT_BITS;
+	if (IsZero(a)) { //a is zero
+		c.se = combine(sign_c, 0);
 		return c;
 	}
-
-	if (exponent_a == K && !same(a.val, c.val))
-		return a; //NaN
-	if (exponent_b == K && !same(b.val, c.val))
-		return b;
 
 
 	uint8_t x_val[NUMBER_SIGNIFICAND_BYTES * 2 + 1];
