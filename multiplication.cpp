@@ -30,8 +30,6 @@ QFloat operator * (const QFloat& a, const QFloat& b) {
 	if (IsZero(b) || IsNaN(b))
 		return b;
 
-	/* not process denormalized number */
-
 	bool denom_a = false, denom_b = false;
 	if (exponent_a == 0) {
 		denom_a = true;
