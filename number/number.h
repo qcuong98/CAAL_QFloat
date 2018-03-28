@@ -61,8 +61,8 @@ class Number {
     char *to_str() const;
 };
 
-static const Number TWO(2);
-static const Number ONE(1);
+static const Number TWO(2ll);
+static const Number ONE(1ll);
 static const Number HALF("0.5");
 static const Number LOG2(
     "0."

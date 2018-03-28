@@ -2,12 +2,19 @@
 #include "QFloat.h"
 #include "number/number.h"
 
-#include <iostream>
-using namespace std;
-
+static const Number TEN(10ll);
 const int16_t BIAS = 0b0011111111111111;
 
-char *QFloat2Dec(const QFloat &q) {
+static char *sign(char *s, int16_t se) {
+    if (se >= 0) return s;
+    int len = strlen(s);
+    s = (char *)realloc(s, len + 2);
+    memmove(s + 1, s, len+1);
+    s[0] = '-';
+    return s;
+}
+
+char *QFloat2Dec(const QFloat &Q) {
 #define RETURN_STR(_s)                           \
     {                                            \
         const char *s = _s;                      \
@@ -16,13 +23,15 @@ char *QFloat2Dec(const QFloat &q) {
         memcpy(r, s, len + 1);                   \
         return r;                                \
     }
-    if (IsNaN(q))
+    if (IsNaN(Q))
         RETURN_STR("NaN");
-    if (IsInf(q)) {
-        if (q.se < 0)
+    if (IsInf(Q)) {
+        if (Q.se < 0)
             RETURN_STR("-Inf");
         RETURN_STR("+Inf");
     }
+
+    QFloat q = Q.se < 0? -Q : Q;
 
     const int BIT_COUNT  = sizeof(QFloat::val) * 8;
     int exponent         = q.se & 0b0111111111111111;
@@ -54,10 +63,7 @@ char *QFloat2Dec(const QFloat &q) {
         }
         res = res + pow;
 
-        if (q.se < 0)
-            res = -res;
-
-        return res.round().to_str();
+        return sign(res.round().to_str(), Q.se);
     } else {
         Number res(0ll);
         Number pow = ONE;
@@ -69,17 +75,18 @@ char *QFloat2Dec(const QFloat &q) {
             if ((q.val[j >> 3] >> (j & 7)) & 1)
                 res = res + pow;
         }
+
         Number exp = Number(exponent) * LOG2;
         Number E   = exp.floor();
         res        = res * (exp.fraction() * LN10).exp();
 
-        char *s     = res.round().to_str();
+        char *s     = (res / TEN).round().to_str();
         int len     = strlen(s);
         s           = (char *)realloc(s, len + 10);
-        char *exp_s = E.to_str();
+        char *exp_s = (E + ONE).to_str();
         s[len]      = 'e';
         strcpy(s + len + 1, exp_s);
         free(exp_s);
-        return s;
+        return sign(s, Q.se);
     }
 }

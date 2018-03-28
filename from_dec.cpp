@@ -206,9 +206,11 @@ QFloat Dec2QFloat(const char *s) {
         exponent = 0;
     } else {
         int float_i = MAX_SIZE - 1;
-        while (float_i >= 0 && float_bits[float_i] == 0)
+        if (int_size == 0) {
+            while (float_i >= 0 && float_bits[float_i] == 0)
+                float_i--;
             float_i--;
-        float_i--;
+        }
         int_size--;
         for (int i = MAX_SIZE - 1; i >= 0; i--) {
             if (int_size > 0) {
