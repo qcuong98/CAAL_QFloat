@@ -167,6 +167,11 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 		c.se = combine(sign_c, 0);
 		return c; //signed zero
 	}
+
+	if (IsInf(a)) {
+		c.se = combine(sign_c, K);
+		return c;
+	}
 	
 	if (IsZero(b)) { // b is zero
 		if (IsZero(a)) //a is zero
