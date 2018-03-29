@@ -148,8 +148,7 @@ QFloat operator /(const QFloat &a, const QFloat &b) {
 	uint16_t sign_b = (b.se >> NUMBER_EXPONENT_BITS);
 	int32_t exponent_b = b.se & K;
 
-	uint16_t sign_c = sign_a ^ sign_b;
-	
+	uint16_t sign_c = sign_a ^ sign_b;	
 
 	QFloat c;
 

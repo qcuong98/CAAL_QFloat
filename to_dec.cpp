@@ -47,7 +47,7 @@ char *QFloat2Dec(const QFloat &Q) {
             }
         }
         if (is_zero)
-            return Number(0ll).to_str();
+            return sign(Number(0ll).to_str(), Q.se);
     }
 
     exponent -= BIAS;
@@ -65,11 +65,13 @@ char *QFloat2Dec(const QFloat &Q) {
 
         return sign(res.round().to_str(), Q.se);
     } else {
-	++exponent;
         Number res(0ll);
         Number pow = ONE;
         if (!is_denormalized)
             res = res + pow;
+	else
+	    ++exponent;
+
         for (int i = -1; i >= -BIT_COUNT; i--) {
             pow   = pow / TWO;
             int j = BIT_COUNT + i;
